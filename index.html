@@ -1,0 +1,1290 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>⚽ NẬM HÀNG FC - Bảng xếp hạng</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flag-icons@6.6.0/css/flag-icons.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #1a1a2e;
+            color: #eee;
+            padding: 10px;
+            max-width: 800px;
+            margin: 0 auto;
+            padding-bottom: 80px;
+        }
+        .header {
+            background: #16213e;
+            padding: 15px 20px;
+            border-radius: 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+        .header h1 {
+            font-size: 22px;
+            background: linear-gradient(90deg, #f7971e, #ffd200);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .header-controls {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+        .admin-btn {
+            padding: 6px 12px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 12px;
+            font-weight: bold;
+            background: #2a3a5e;
+            color: #eee;
+            transition: 0.3s;
+        }
+        .admin-btn:hover {
+            background: #f7971e;
+            color: #1a1a2e;
+        }
+        .admin-btn.success {
+            background: #27ae60;
+        }
+        .admin-btn.success:hover {
+            background: #1e8449;
+            color: #fff;
+        }
+        .tabs {
+            display: flex;
+            gap: 5px;
+            margin-bottom: 15px;
+            background: #16213e;
+            padding: 5px;
+            border-radius: 12px;
+            flex-wrap: wrap;
+        }
+        .tab-btn {
+            flex: 1;
+            padding: 10px 8px;
+            border: none;
+            background: transparent;
+            color: #888;
+            font-weight: bold;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: 0.3s;
+            font-size: 14px;
+            min-width: 60px;
+            text-align: center;
+        }
+        .tab-btn.active {
+            background: #f7971e;
+            color: #1a1a2e;
+        }
+        .tab-btn:hover:not(.active) {
+            background: #2a3a5e;
+            color: #eee;
+        }
+        .tab-content {
+            display: none;
+            animation: fadeIn 0.3s;
+        }
+        .tab-content.active {
+            display: block;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .card {
+            background: #16213e;
+            border-radius: 12px;
+            padding: 15px;
+            margin-bottom: 12px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+        }
+        .card-title {
+            font-size: 16px;
+            font-weight: bold;
+            margin-bottom: 10px;
+            color: #f7971e;
+        }
+        .player-item {
+            display: flex;
+            align-items: center;
+            padding: 10px 12px;
+            background: #1a1a2e;
+            border-radius: 8px;
+            margin-bottom: 6px;
+            cursor: pointer;
+            transition: 0.2s;
+            border-left: 4px solid transparent;
+        }
+        .player-item:hover {
+            background: #2a2a4e;
+            transform: translateX(5px);
+        }
+        .player-item .rank-badge {
+            font-size: 20px;
+            margin-right: 10px;
+            min-width: 30px;
+        }
+        .player-item .flag {
+            font-size: 28px;
+            margin-right: 10px;
+            width: 35px;
+            text-align: center;
+        }
+        .player-item .info {
+            flex: 1;
+        }
+        .player-item .name {
+            font-weight: bold;
+            font-size: 16px;
+        }
+        .player-item .elo {
+            font-size: 14px;
+            opacity: 0.8;
+        }
+        .player-item .stats {
+            font-size: 12px;
+            opacity: 0.6;
+            margin-top: 2px;
+        }
+        .rank-D { color: #9E9E9E; }
+        .rank-Dplus { color: #BDBDBD; }
+        .rank-C { color: #4CAF50; }
+        .rank-Cplus { color: #66BB6A; }
+        .rank-B { color: #2196F3; }
+        .rank-Bplus { color: #42A5F5; }
+        .rank-A { color: #9C27B0; }
+        .rank-Aplus { color: #AB47BC; }
+        .rank-S {
+            background: linear-gradient(145deg, #FF3333, #FF9999);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-shadow: 0 0 15px rgba(255, 51, 51, 0.4);
+            display: inline-block;
+        }
+        .rank-Splus {
+            background: linear-gradient(145deg, #FF3333, #FF9999);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-shadow: 0 0 15px rgba(255, 51, 51, 0.4);
+            display: inline-block;
+        }
+        .rank-SS {
+            background: linear-gradient(145deg, #FFD700, #FFF0B3);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-shadow: 0 0 20px rgba(255, 215, 0, 0.5);
+            display: inline-block;
+        }
+        .rank-SSplus {
+            background: linear-gradient(145deg, #FFD700, #FFF0B3);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-shadow: 0 0 20px rgba(255, 215, 0, 0.5);
+            display: inline-block;
+        }
+        .rank-SSS {
+            background: linear-gradient(90deg, #FFE066, #FFD700, #D9B3FF, #C084FC);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-shadow: 0 0 20px rgba(255, 224, 102, 0.4), 0 0 40px rgba(192, 132, 252, 0.3);
+            display: inline-block;
+        }
+        .sub-tabs {
+            display: flex;
+            gap: 5px;
+            margin-bottom: 10px;
+        }
+        .sub-tab-btn {
+            flex: 1;
+            padding: 8px;
+            border: none;
+            background: #1a1a2e;
+            color: #888;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: 0.3s;
+            font-size: 13px;
+        }
+        .sub-tab-btn.active {
+            background: #f7971e;
+            color: #1a1a2e;
+        }
+        .profile-header {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            padding: 15px;
+            background: #1a1a2e;
+            border-radius: 12px;
+            margin-bottom: 15px;
+            position: relative;
+        }
+        .profile-flag { font-size: 60px; }
+        .profile-name { font-size: 24px; font-weight: bold; }
+        .profile-elo { font-size: 18px; opacity: 0.8; }
+        .profile-rank-badge {
+            position: absolute;
+            top: 10px;
+            right: 15px;
+            text-align: right;
+            font-size: 13px;
+            opacity: 0.7;
+        }
+        .profile-rank-badge .rank-num {
+            font-size: 18px;
+            font-weight: bold;
+            color: #f7971e;
+        }
+        .profile-stats {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            margin: 10px 0;
+        }
+        .stat-box {
+            background: #1a1a2e;
+            padding: 12px;
+            border-radius: 8px;
+            text-align: center;
+        }
+        .stat-box .number {
+            font-size: 22px;
+            font-weight: bold;
+            color: #f7971e;
+        }
+        .stat-box .label {
+            font-size: 12px;
+            opacity: 0.6;
+            margin-top: 2px;
+        }
+        .cups-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 8px;
+        }
+        .cup-tag {
+            background: #2a3a5e;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            color: #ffd700;
+            border: 1px solid #ffd70033;
+        }
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.8);
+            z-index: 999;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+        .modal-overlay.show { display: flex; }
+        .modal {
+            background: #16213e;
+            border-radius: 16px;
+            padding: 25px;
+            max-width: 500px;
+            width: 100%;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+        .modal h2 {
+            margin-bottom: 15px;
+            color: #f7971e;
+        }
+        .modal label {
+            display: block;
+            margin: 10px 0 5px;
+            font-size: 14px;
+            opacity: 0.8;
+        }
+        .modal input, .modal select {
+            width: 100%;
+            padding: 10px;
+            border-radius: 8px;
+            border: 1px solid #2a3a5e;
+            background: #1a1a2e;
+            color: #eee;
+            font-size: 14px;
+            margin-bottom: 5px;
+        }
+        .modal .btn-group {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+        }
+        .modal .btn-group button {
+            flex: 1;
+            padding: 12px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: 0.3s;
+        }
+        .btn-primary { background: #f7971e; color: #1a1a2e; }
+        .btn-danger { background: #e74c3c; color: white; }
+        .btn-secondary { background: #2a3a5e; color: #eee; }
+        .btn-success { background: #27ae60; color: white; }
+        .btn-primary:hover, .btn-danger:hover, .btn-secondary:hover, .btn-success:hover {
+            transform: scale(1.02);
+            opacity: 0.9;
+        }
+        .rank-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 14px;
+        }
+        .rank-table td {
+            padding: 8px 12px;
+            border-bottom: 1px solid #2a3a5e;
+        }
+        .rank-table .badge-example {
+            font-size: 18px;
+            display: inline-block;
+            min-width: 40px;
+        }
+        @media (max-width: 600px) {
+            .header h1 { font-size: 18px; }
+            .tab-btn { font-size: 12px; padding: 8px 4px; }
+            .profile-header { flex-direction: column; text-align: center; }
+            .profile-stats { grid-template-columns: repeat(3, 1fr); }
+            .player-item { padding: 8px 10px; }
+            .profile-rank-badge { position: static; text-align: center; margin-top: 5px; }
+        }
+        .toast {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #2a3a5e;
+            padding: 12px 24px;
+            border-radius: 10px;
+            color: #eee;
+            font-weight: bold;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+            display: none;
+            animation: slideUp 0.3s;
+            max-width: 90%;
+            text-align: center;
+        }
+        .toast.show { display: block; }
+        .toast.success { border-left: 4px solid #27ae60; }
+        .toast.error { border-left: 4px solid #e74c3c; }
+        @keyframes slideUp {
+            from { transform: translateX(-50%) translateY(20px); opacity: 0; }
+            to { transform: translateX(-50%) translateY(0); opacity: 1; }
+        }
+        .empty-state {
+            text-align: center;
+            padding: 40px 20px;
+            opacity: 0.6;
+        }
+        .empty-state .icon { font-size: 48px; margin-bottom: 10px; }
+        .chart-container {
+            background: #1a1a2e;
+            border-radius: 12px;
+            padding: 15px;
+            margin-top: 10px;
+            position: relative;
+            height: 200px;
+            width: 100%;
+        }
+        .chart-container canvas { max-height: 180px; width: 100% !important; }
+        .chart-title {
+            font-size: 14px;
+            font-weight: bold;
+            color: #f7971e;
+            margin-bottom: 10px;
+            text-align: center;
+        }
+        .chart-empty {
+            text-align: center;
+            padding: 30px 0;
+            opacity: 0.4;
+        }
+        .chart-empty .icon { font-size: 24px; }
+        .chart-empty .text { font-size: 13px; margin-top: 5px; }
+        .highest-elo {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            padding: 8px 15px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: bold;
+        }
+        .highest-elo .label { opacity: 0.6; font-weight: normal; }
+        .highest-elo .value { font-size: 18px; }
+        .rd-display { font-size: 11px; opacity: 0.4; margin-top: 2px; }
+        .history-list { max-height: 200px; overflow-y: auto; }
+        .history-list .history-item {
+            background: #1a1a2e;
+            padding: 6px 10px;
+            border-radius: 6px;
+            margin-bottom: 4px;
+            font-size: 12px;
+            display: flex;
+            justify-content: space-between;
+        }
+        .history-list .history-item .h-result { opacity: 0.6; }
+        .profile-scroll {
+            max-height: 70vh;
+            overflow-y: auto;
+            padding-right: 5px;
+        }
+        .profile-scroll::-webkit-scrollbar { width: 4px; }
+        .profile-scroll::-webkit-scrollbar-track { background: #1a1a2e; }
+        .profile-scroll::-webkit-scrollbar-thumb { background: #f7971e; border-radius: 4px; }
+        .data-source {
+            font-size: 11px;
+            opacity: 0.4;
+            text-align: center;
+            padding: 5px;
+            margin-top: 10px;
+        }
+        .loading {
+            text-align: center;
+            padding: 60px 20px;
+        }
+        .loading .spinner {
+            display: inline-block;
+            width: 40px;
+            height: 40px;
+            border: 4px solid #2a3a5e;
+            border-top: 4px solid #f7971e;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+        .admin-panel {
+            background: #1a1a2e;
+            border: 1px solid #2a3a5e;
+            border-radius: 10px;
+            padding: 15px;
+            margin-top: 10px;
+        }
+        .admin-panel .title {
+            font-size: 13px;
+            opacity: 0.6;
+            margin-bottom: 10px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        .admin-panel .btn-group {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        .admin-panel .btn-group button {
+            flex: 1;
+            min-width: 120px;
+            padding: 10px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 13px;
+            transition: 0.3s;
+        }
+        .version-info {
+            font-size: 10px;
+            opacity: 0.3;
+            text-align: center;
+            margin-top: 5px;
+        }
+        .manual-import {
+            margin-top: 10px;
+            padding-top: 10px;
+            border-top: 1px solid #2a3a5e;
+        }
+        .manual-import input[type="file"] {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <h1>⚽ NẬM HÀNG FC</h1>
+        <div class="header-controls">
+            <button class="admin-btn" onclick="showAdminPanel()">⚙️ Quản trị</button>
+        </div>
+    </div>
+
+    <div class="tabs">
+        <button class="tab-btn active" data-tab="ranking">🏆 Xếp hạng</button>
+        <button class="tab-btn" data-tab="profile">👤 Profile</button>
+        <button class="tab-btn" data-tab="rankinfo">📊 Rank</button>
+    </div>
+
+    <!-- Loading -->
+    <div id="loading-state" class="loading">
+        <div class="spinner"></div>
+        <p style="margin-top:15px;opacity:0.6;">Đang tải dữ liệu...</p>
+    </div>
+
+    <div id="tab-ranking" class="tab-content">
+        <div class="card">
+            <div class="sub-tabs">
+                <button class="sub-tab-btn active" data-sub="elo">🏅 Xếp hạng Elo</button>
+                <button class="sub-tab-btn" data-sub="winrate">📈 Tỉ lệ thắng</button>
+            </div>
+            <div id="ranking-list"></div>
+        </div>
+    </div>
+
+    <div id="tab-profile" class="tab-content">
+        <div id="profile-content">
+            <div class="empty-state"><div class="icon">👤</div><p>Chọn một người chơi từ bảng xếp hạng</p></div>
+        </div>
+    </div>
+
+    <div id="tab-rankinfo" class="tab-content">
+        <div class="card">
+            <div class="card-title">📊 Bảng xếp hạng ELO</div>
+            <table class="rank-table">
+                <tr><td><span class="badge-example rank-D">⚪</span> D</td><td>&lt; 500</td></tr>
+                <tr><td><span class="badge-example rank-Dplus">⚪</span> D+</td><td>500 - 599</td></tr>
+                <tr><td><span class="badge-example rank-C">🟢</span> C</td><td>600 - 699</td></tr>
+                <tr><td><span class="badge-example rank-Cplus">🟢</span> C+</td><td>700 - 799</td></tr>
+                <tr><td><span class="badge-example rank-B">🔵</span> B</td><td>800 - 899</td></tr>
+                <tr><td><span class="badge-example rank-Bplus">🔵</span> B+</td><td>900 - 999</td></tr>
+                <tr><td><span class="badge-example rank-A">🟣</span> A</td><td>1000 - 1099</td></tr>
+                <tr><td><span class="badge-example rank-Aplus">🟣</span> A+</td><td>1100 - 1199</td></tr>
+                <tr><td><span class="badge-example rank-S">🔴</span> S</td><td>1200 - 1299</td></tr>
+                <tr><td><span class="badge-example rank-Splus">🔴</span> S+</td><td>1300 - 1399</td></tr>
+                <tr><td><span class="badge-example rank-SS">🟡</span> SS</td><td>1400 - 1499</td></tr>
+                <tr><td><span class="badge-example rank-SSplus">🟡</span> SS+</td><td>1500 - 1599</td></tr>
+                <tr><td><span class="badge-example rank-SSS">🌟</span> SSS</td><td>≥ 1600</td></tr>
+            </table>
+        </div>
+        <div class="card">
+            <div class="card-title">📈 Hệ số nhân (Multiplier) theo cách biệt</div>
+            <table class="rank-table">
+                <tr><td>Cách biệt 0 bàn (Hòa)</td><td>× 0.7</td></tr>
+                <tr><td>Cách biệt 1 bàn</td><td>× 1.0</td></tr>
+                <tr><td>Cách biệt 2 bàn</td><td>× 1.25</td></tr>
+                <tr><td>Cách biệt 3 bàn</td><td>× 1.5</td></tr>
+                <tr><td>Cách biệt 4 bàn</td><td>× 1.75</td></tr>
+                <tr><td>Cách biệt ≥ 5 bàn</td><td>× 2.0</td></tr>
+            </table>
+        </div>
+    </div>
+
+    <!-- ADMIN MODAL -->
+    <div class="modal-overlay" id="admin-modal">
+        <div class="modal">
+            <h2>⚙️ Quản trị dữ liệu</h2>
+            <p style="opacity:0.6;font-size:13px;margin-bottom:15px;">
+                🔒 Chỉ người điều hành mới có thể cập nhật dữ liệu  |         
+                ban khong lam duoc dau>:( 
+            </p>
+
+             </div>
+        </div>
+    </div>
+
+    <div class="toast" id="toast"></div>
+
+    <!-- DATA SOURCE -->
+    <div class="data-source" id="data-source">
+        📊 Nguồn: <span id="data-source-text">GitHub</span> • Cập nhật: <span id="last-updated">--</span>
+        <div class="version-info" id="version-info"></div>
+    </div>
+
+    <script>
+        // ============================================================
+        // 🔧 CẤU HÌNH - SỬA ĐỔI THEO REPOSITORY CỦA BẠN
+        // ============================================================
+        const GITHUB_CONFIG = {
+    username: 'BiVangReal',        // 👈 Tên GitHub của bạn
+    repo: 'RankElo',               // 👈 Tên repository
+    filePath: 'data/elo_data.json',
+    branch: 'main'
+};
+
+        // 👇 Link trực tiếp để fetch (dùng raw.githubusercontent.com)
+        const DATA_URL = `https://raw.githubusercontent.com/${GITHUB_CONFIG.username}/${GITHUB_CONFIG.repo}/${GITHUB_CONFIG.branch}/${GITHUB_CONFIG.filePath}`;
+
+        // ============================================================
+
+        let players = [];
+        let matchHistory = [];
+        let currentProfileId = null;
+        let dataLoaded = false;
+
+        const defaultPlayers = [{
+            id: 'p1',
+            name: 'Nguyễn Văn A',
+            flag: 'vn',
+            elo: 1000,
+            rd: 300,
+            volatility: 0.06,
+            wins: 0,
+            losses: 0,
+            draws: 0,
+            goalsScored: 0,
+            goalsConceded: 0,
+            cups: [],
+            lastPlayed: Date.now(),
+            eloHistory: [{ elo: 1000, date: new Date().toLocaleString() }],
+            highestElo: 1000
+        }, {
+            id: 'p2',
+            name: 'Trần Thị B',
+            flag: 'us',
+            elo: 1000,
+            rd: 300,
+            volatility: 0.06,
+            wins: 0,
+            losses: 0,
+            draws: 0,
+            goalsScored: 0,
+            goalsConceded: 0,
+            cups: [],
+            lastPlayed: Date.now(),
+            eloHistory: [{ elo: 1000, date: new Date().toLocaleString() }],
+            highestElo: 1000
+        }, {
+            id: 'p3',
+            name: 'Lê Văn C',
+            flag: 'gb',
+            elo: 1000,
+            rd: 300,
+            volatility: 0.06,
+            wins: 0,
+            losses: 0,
+            draws: 0,
+            goalsScored: 0,
+            goalsConceded: 0,
+            cups: [],
+            lastPlayed: Date.now(),
+            eloHistory: [{ elo: 1000, date: new Date().toLocaleString() }],
+            highestElo: 1000
+        }];
+
+        // ===== INIT =====
+        async function init() {
+            showLoading(true);
+            try {
+                // Thử đọc từ localStorage trước
+                const saved = localStorage.getItem('elo_view_data');
+                if (saved) {
+                    try {
+                        const data = JSON.parse(saved);
+                        if (data.players && data.players.length > 0) {
+                            players = data.players;
+                            matchHistory = data.history || [];
+                            dataLoaded = true;
+                            updateLastUpdated(data.lastUpdated || '--');
+                            renderAll();
+                            setupTabs();
+                            setupSubTabs();
+                            showLoading(false);
+                            document.getElementById('data-source-text').textContent = 'Cache';
+                            return;
+                        }
+                    } catch(e) {}
+                }
+
+                // Fetch từ GitHub
+                await fetchDataFromGitHub();
+
+            } catch (error) {
+                console.error('Lỗi tải dữ liệu:', error);
+                // Fallback: dùng dữ liệu mặc định
+                if (!dataLoaded) {
+                    loadDefaultData();
+                    showToast('⚠️ Không thể tải dữ liệu từ GitHub, dùng dữ liệu mặc định', 'error');
+                }
+            }
+            showLoading(false);
+        }
+
+        async function fetchDataFromGitHub() {
+            try {
+                const response = await fetch(DATA_URL, {
+                    headers: {
+                        'Cache-Control': 'no-cache',
+                        'Pragma': 'no-cache'
+                    }
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}`);
+                }
+
+                const data = await response.json();
+
+                if (data.players && Array.isArray(data.players) && data.players.length > 0) {
+                    players = data.players;
+                    matchHistory = data.history || [];
+                    dataLoaded = true;
+
+                    // Lưu cache
+                    localStorage.setItem('elo_view_data', JSON.stringify({
+                        players: players,
+                        history: matchHistory,
+                        lastUpdated: new Date().toLocaleString()
+                    }));
+
+                    updateLastUpdated(new Date().toLocaleString());
+                    renderAll();
+                    setupTabs();
+                    setupSubTabs();
+                    document.getElementById('data-source-text').textContent = 'GitHub';
+                    showToast('✅ Đã tải dữ liệu từ GitHub!', 'success');
+                } else {
+                    throw new Error('Dữ liệu không hợp lệ');
+                }
+            } catch (error) {
+                console.error('Fetch error:', error);
+                // Thử đọc từ cache
+                const saved = localStorage.getItem('elo_view_data');
+                if (saved) {
+                    try {
+                        const data = JSON.parse(saved);
+                        if (data.players && data.players.length > 0) {
+                            players = data.players;
+                            matchHistory = data.history || [];
+                            dataLoaded = true;
+                            updateLastUpdated(data.lastUpdated || '-- (cache)');
+                            renderAll();
+                            setupTabs();
+                            setupSubTabs();
+                            document.getElementById('data-source-text').textContent = 'Cache (offline)';
+                            showToast('📦 Dùng dữ liệu cache (không kết nối được GitHub)', 'error');
+                            return;
+                        }
+                    } catch(e) {}
+                }
+                throw error;
+            }
+        }
+
+        function loadDefaultData() {
+            players = JSON.parse(JSON.stringify(defaultPlayers));
+            matchHistory = [];
+            dataLoaded = true;
+            localStorage.setItem('elo_view_data', JSON.stringify({
+                players: players,
+                history: matchHistory,
+                lastUpdated: new Date().toLocaleString()
+            }));
+            updateLastUpdated(new Date().toLocaleString());
+            renderAll();
+            setupTabs();
+            setupSubTabs();
+            document.getElementById('data-source-text').textContent = 'Mặc định';
+        }
+
+        function updateLastUpdated(text) {
+            document.getElementById('last-updated').textContent = text || '--';
+        }
+
+        function showLoading(show) {
+            document.getElementById('loading-state').style.display = show ? 'block' : 'none';
+            if (!show) {
+                document.querySelectorAll('.tab-content').forEach(el => {
+                    if (el.id !== 'tab-rankinfo') {
+                        el.style.display = '';
+                    }
+                });
+                // Active tab
+                const activeTab = document.querySelector('.tab-btn.active');
+                if (activeTab) {
+                    document.getElementById(`tab-${activeTab.dataset.tab}`).style.display = 'block';
+                }
+            }
+        }
+
+        // ===== MANUAL IMPORT (FALLBACK) =====
+        function manualImport(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const data = JSON.parse(e.target.result);
+                    if (data.players && Array.isArray(data.players)) {
+                        players = data.players;
+                        matchHistory = data.history || [];
+                        dataLoaded = true;
+                        localStorage.setItem('elo_view_data', JSON.stringify({
+                            players: players,
+                            history: matchHistory,
+                            lastUpdated: new Date().toLocaleString()
+                        }));
+                        renderAll();
+                        updateLastUpdated(new Date().toLocaleString());
+                        document.getElementById('data-source-text').textContent = 'Manual Import';
+                        showToast('📥 Đã nhập dữ liệu thủ công!', 'success');
+                        closeModal('admin-modal');
+                    } else {
+                        showToast('File không hợp lệ!', 'error');
+                    }
+                } catch (err) {
+                    showToast('Lỗi đọc file: ' + err.message, 'error');
+                }
+            };
+            reader.readAsText(file);
+            event.target.value = '';
+        }
+
+        // ===== EXPORT DATA =====
+        function exportData() {
+            const data = {
+                players: players,
+                history: matchHistory,
+                exportedAt: new Date().toISOString()
+            };
+            const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `elo_data_${new Date().toISOString().slice(0, 10)}.json`;
+            a.click();
+            URL.revokeObjectURL(url);
+
+            // Hiển thị hướng dẫn upload lên GitHub
+            showToast('📤 Đã xuất! Upload file lên GitHub để cập nhật cho mọi người.', 'success');
+            closeModal('admin-modal');
+
+            // Thêm hướng dẫn chi tiết
+            setTimeout(() => {
+                showToast('📖 Hướng dẫn: Upload file JSON lên repo GitHub tại ' + GITHUB_CONFIG.filePath, 'info');
+            }, 1500);
+        }
+
+        // ===== RESET =====
+        function resetToDefault() {
+            if (!confirm('⚠️ Bạn chắc chắn muốn khôi phục dữ liệu mặc định?')) return;
+            if (!confirm('Lần cuối: Dữ liệu hiện tại sẽ bị mất!')) return;
+            loadDefaultData();
+            showToast('🔄 Đã khôi phục dữ liệu mặc định!', 'success');
+            closeModal('admin-modal');
+        }
+
+        // ===== RANK HELPERS =====
+        function getRank(elo) {
+            if (elo < 500) return { label: 'D', emoji: '⚪', className: 'rank-D' };
+            if (elo < 600) return { label: 'D+', emoji: '⚪', className: 'rank-Dplus' };
+            if (elo < 700) return { label: 'C', emoji: '🟢', className: 'rank-C' };
+            if (elo < 800) return { label: 'C+', emoji: '🟢', className: 'rank-Cplus' };
+            if (elo < 900) return { label: 'B', emoji: '🔵', className: 'rank-B' };
+            if (elo < 1000) return { label: 'B+', emoji: '🔵', className: 'rank-Bplus' };
+            if (elo < 1100) return { label: 'A', emoji: '🟣', className: 'rank-A' };
+            if (elo < 1200) return { label: 'A+', emoji: '🟣', className: 'rank-Aplus' };
+            if (elo < 1300) return { label: 'S', emoji: '🔴', className: 'rank-S' };
+            if (elo < 1400) return { label: 'S+', emoji: '🔴', className: 'rank-Splus' };
+            if (elo < 1500) return { label: 'SS', emoji: '🟡', className: 'rank-SS' };
+            if (elo < 1600) return { label: 'SS+', emoji: '🟡', className: 'rank-SSplus' };
+            return { label: 'SSS', emoji: '🌟', className: 'rank-SSS' };
+        }
+
+        function getWinRate(p) {
+            const total = p.wins + p.losses + p.draws;
+            if (total === 0) return 0;
+            return (p.wins / total) * 100;
+        }
+
+        function getFlagEmoji(code) {
+            const flags = {
+                vn: '🇻🇳', us: '🇺🇸', gb: '🇬🇧', fr: '🇫🇷', de: '🇩🇪',
+                es: '🇪🇸', it: '🇮🇹', br: '🇧🇷', ar: '🇦🇷', jp: '🇯🇵',
+                kr: '🇰🇷', cn: '🇨🇳', ru: '🇷🇺', au: '🇦🇺', ca: '🇨🇦',
+                mx: '🇲🇽', nl: '🇳🇱', pt: '🇵🇹', se: '🇸🇪', no: '🇳🇴',
+                dk: '🇩🇰', fi: '🇫🇮', pl: '🇵🇱', cz: '🇨🇿', at: '🇦🇹',
+                ch: '🇨🇭', be: '🇧🇪', gr: '🇬🇷', tr: '🇹🇷', eg: '🇪🇬',
+                ng: '🇳🇬', za: '🇿🇦', in: '🇮🇳', id: '🇮🇩', my: '🇲🇾',
+                ph: '🇵🇭', sg: '🇸🇬', th: '🇹🇭', nz: '🇳🇿', kp: '🇰🇵',
+                cd: '🇨🇩', kh: '🇰🇭', 'gb-eng': '🏴󠁧󠁢󠁥󠁮󠁧󠁿', cv: '🇨🇻', gt: '🇬🇹',
+                jo: '🇯🇴', il: '🇮🇱'
+            };
+            return flags[code] || '🏳️';
+        }
+
+        // ===== RENDER =====
+        function renderRanking(sortBy = 'elo') {
+            const container = document.getElementById('ranking-list');
+            if (players.length === 0) {
+                container.innerHTML = '<div class="empty-state"><div class="icon">📭</div>Chưa có người chơi nào</div>';
+                return;
+            }
+
+            let sorted = [...players];
+            if (sortBy === 'elo') {
+                sorted.sort((a, b) => b.elo - a.elo);
+            } else {
+                sorted.sort((a, b) => getWinRate(b) - getWinRate(a));
+            }
+
+            let html = '';
+            sorted.forEach((p, idx) => {
+                const rank = getRank(p.elo);
+                const wr = getWinRate(p);
+                const total = p.wins + p.losses + p.draws;
+                const cupCount = p.cups.length;
+
+                html += `
+                    <div class="player-item" onclick="showProfile('${p.id}')">
+                        <div class="rank-badge ${rank.className}">${rank.emoji}</div>
+                        <div class="flag">${getFlagEmoji(p.flag)}</div>
+                        <div class="info">
+                            <div class="name ${rank.className}">${p.name}</div>
+                            <div class="elo">ELO: ${p.elo} • ${rank.label}</div>
+                            <div class="stats">${total} trận • Thắng ${wr.toFixed(1)}% • 🏆 ${cupCount}</div>
+                        </div>
+                        <div style="font-size:13px;font-weight:bold;" class="${rank.className}">#${idx + 1}</div>
+                    </div>
+                `;
+            });
+            container.innerHTML = html;
+        }
+
+        function showProfile(id) {
+            const p = players.find(pl => pl.id === id);
+            if (!p) return;
+
+            currentProfileId = id;
+            const rank = getRank(p.elo);
+            const highestRank = getRank(p.highestElo || p.elo);
+            const wr = getWinRate(p);
+            const total = p.wins + p.losses + p.draws;
+
+            const eloRank = players.filter(pl => pl.elo > p.elo).length + 1;
+            const winRank = players.filter(pl => getWinRate(pl) > wr).length + 1;
+
+            let lastPlayedText = 'Chưa có dữ liệu';
+            let lastPlayedColor = '#888';
+            if (p.lastPlayed) {
+                const lastDate = new Date(p.lastPlayed);
+                const diffDays = Math.floor((Date.now() - lastDate.getTime()) / (1000 * 60 * 60 * 24));
+                const diffHours = Math.floor((Date.now() - lastDate.getTime()) / (1000 * 60 * 60));
+                const diffMinutes = Math.floor((Date.now() - lastDate.getTime()) / (1000 * 60));
+
+                if (diffDays === 0) {
+                    if (diffHours === 0) {
+                        lastPlayedText = diffMinutes < 1 ? 'Vừa xong' : `${diffMinutes} phút trước`;
+                        lastPlayedColor = '#4CAF50';
+                    } else {
+                        lastPlayedText = `${diffHours} giờ trước`;
+                        lastPlayedColor = '#FFC107';
+                    }
+                } else if (diffDays === 1) {
+                    lastPlayedText = 'Hôm qua';
+                    lastPlayedColor = '#FF9800';
+                } else if (diffDays <= 3) {
+                    lastPlayedText = `${diffDays} ngày trước`;
+                    lastPlayedColor = '#FF5722';
+                } else if (diffDays <= 7) {
+                    lastPlayedText = `${diffDays} ngày trước`;
+                    lastPlayedColor = '#F44336';
+                } else {
+                    lastPlayedText = `${diffDays} ngày trước`;
+                    lastPlayedColor = '#9E9E9E';
+                }
+            }
+
+            const container = document.getElementById('profile-content');
+            let cupsHtml = '';
+            if (p.cups.length === 0) {
+                cupsHtml = '<span style="opacity:0.5;">Chưa có cúp</span>';
+            } else {
+                cupsHtml = p.cups.map(c => `<span class="cup-tag">🏆 ${c.name}</span>`).join('');
+            }
+
+            let historyHtml = '';
+            const playerHistory = matchHistory.filter(m => m.p1Id === p.id || m.p2Id === p.id).reverse().slice(0, 10);
+            if (playerHistory.length === 0) {
+                historyHtml = '<div style="opacity:0.4;text-align:center;padding:10px 0;">Chưa có trận đấu</div>';
+            } else {
+                playerHistory.forEach(m => {
+                    const isP1 = m.p1Id === p.id;
+                    const opponent = isP1 ? m.p2Name : m.p1Name;
+                    const myScore = isP1 ? m.score1 : m.score2;
+                    const oppScore = isP1 ? m.score2 : m.score1;
+                    const result = myScore > oppScore ? '✅' : myScore < oppScore ? '❌' : '⬜';
+                    const eloChange = isP1 ? (m.newElo1 - m.oldElo1) : (m.newElo2 - m.oldElo2);
+                    const changeText = eloChange >= 0 ? `+${eloChange}` : `${eloChange}`;
+                    historyHtml += `
+                        <div class="history-item">
+                            <span>${result} ${opponent} (${myScore}-${oppScore})</span>
+                            <span class="h-result">${changeText} Elo</span>
+                        </div>
+                    `;
+                });
+            }
+
+            container.innerHTML = `
+                <div class="profile-scroll">
+                    <div class="profile-header">
+                        <div class="profile-flag">${getFlagEmoji(p.flag)}</div>
+                        <div>
+                            <div class="profile-name ${rank.className}">${p.name}</div>
+                            <div class="profile-elo">ELO: ${p.elo} • ${rank.label} ${rank.emoji}</div>
+                            <div class="rd-display">RD: ${Math.round(p.rd || 300)}</div>
+                        </div>
+                        <div class="profile-rank-badge">
+                            <div>#${eloRank} Elo</div>
+                            <div>#${winRank} Win Rate</div>
+                        </div>
+                    </div>
+
+                    <div class="profile-stats">
+                        <div class="stat-box"><div class="number">${total}</div><div class="label">Tổng trận</div></div>
+                        <div class="stat-box"><div class="number">${wr.toFixed(1)}%</div><div class="label">Tỉ lệ thắng</div></div>
+                        <div class="stat-box"><div class="number">${p.cups.length}</div><div class="label">Cúp</div></div>
+                    </div>
+
+                    <div class="card" style="margin-top:10px;">
+                        <div style="display:flex;justify-content:space-between;align-items:center;">
+                            <span style="font-weight:bold;font-size:15px;">🏅 Thành tích Elo</span>
+                            <div class="highest-elo">
+                                <span class="label">Cao nhất:</span>
+                                <span class="value ${highestRank.className}">${p.highestElo || p.elo}</span>
+                                <span style="font-size:13px;${highestRank.className}">${highestRank.emoji} ${highestRank.label}</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card" style="margin-top:10px;">
+                        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+                            <span style="font-weight:bold;font-size:15px;">⚽ Bàn thắng - Thủng lưới</span>
+                        </div>
+                        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+                            <div style="background:#1a2a1a;padding:10px;border-radius:8px;text-align:center;border-left:3px solid #4CAF50;">
+                                <div style="font-size:12px;opacity:0.6;">⚽ Bàn thắng</div>
+                                <div style="font-size:24px;font-weight:bold;color:#4CAF50;">${p.goalsScored}</div>
+                            </div>
+                            <div style="background:#2a1a1a;padding:10px;border-radius:8px;text-align:center;border-left:3px solid #F44336;">
+                                <div style="font-size:12px;opacity:0.6;">🥅 Thủng lưới</div>
+                                <div style="font-size:24px;font-weight:bold;color:#F44336;">${p.goalsConceded}</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card" style="margin-top:10px;">
+                        <div style="display:flex;justify-content:space-between;">
+                            <span>🏆 Danh sách cúp</span>
+                            <span style="opacity:0.6;font-size:12px;">${p.cups.length} cúp</span>
+                        </div>
+                        <div class="cups-list">${cupsHtml}</div>
+                    </div>
+
+                    <div class="card" style="margin-top:10px;">
+                        <div class="chart-title">📈 Lịch sử Elo</div>
+                        <div class="chart-container">
+                            <canvas id="eloChart"></canvas>
+                        </div>
+                        <div style="font-size:11px;opacity:0.4;text-align:center;margin-top:5px;">
+                            ${p.eloHistory && p.eloHistory.length > 1 ? `${p.eloHistory.length} trận gần nhất` : 'Chưa có dữ liệu'}
+                        </div>
+                    </div>
+
+                    <div class="card" style="margin-top:10px;">
+                        <div style="display:flex;justify-content:space-between;font-size:14px;">
+                            <span>✅ Thắng: ${p.wins}</span>
+                            <span>⬜ Hòa: ${p.draws}</span>
+                            <span>❌ Thua: ${p.losses}</span>
+                        </div>
+                        <div style="margin-top:8px;padding-top:8px;border-top:1px solid #2a3a5e;display:flex;justify-content:space-between;align-items:center;font-size:13px;">
+                            <span>⏰ Lần đấu cuối:</span>
+                            <span style="color:${lastPlayedColor};font-weight:bold;">${lastPlayedText}</span>
+                        </div>
+                    </div>
+
+                    <div class="card" style="margin-top:10px;">
+                        <div style="font-weight:bold;font-size:14px;margin-bottom:8px;">📜 Lịch sử đối đầu</div>
+                        <div class="history-list">${historyHtml}</div>
+                    </div>
+                </div>
+            `;
+
+            setTimeout(() => {
+                renderEloChart(p.eloHistory);
+            }, 100);
+
+            switchTab('profile');
+        }
+
+        function renderEloChart(eloHistory) {
+            const canvas = document.getElementById('eloChart');
+            if (!canvas) return;
+
+            if (!eloHistory || eloHistory.length < 2) {
+                const parent = canvas.parentElement;
+                parent.innerHTML = `
+                    <div class="chart-empty">
+                        <div class="icon">📊</div>
+                        <div class="text">Cần ít nhất 2 trận để vẽ biểu đồ</div>
+                    </div>
+                `;
+                return;
+            }
+
+            const labels = eloHistory.map((_, index) => `#${index + 1}`);
+            const data = eloHistory.map(item => item.elo);
+
+            const minElo = Math.max(0, Math.min(...data) - 30);
+            const maxElo = Math.max(...data) + 30;
+
+            if (window._eloChart) {
+                window._eloChart.destroy();
+            }
+
+            window._eloChart = new Chart(canvas, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Elo',
+                        data: data,
+                        borderColor: '#f7971e',
+                        backgroundColor: 'rgba(247, 151, 30, 0.1)',
+                        borderWidth: 3,
+                        pointBackgroundColor: '#ffd200',
+                        pointBorderColor: '#f7971e',
+                        pointBorderWidth: 2,
+                        pointRadius: 3,
+                        pointHoverRadius: 5,
+                        tension: 0.3,
+                        fill: true
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        y: {
+                            min: minElo,
+                            max: maxElo,
+                            ticks: { color: '#888', font: { size: 10 } },
+                            grid: { color: 'rgba(255,255,255,0.05)' }
+                        },
+                        x: {
+                            ticks: { color: '#888', font: { size: 9 }, maxTicksLimit: 15 },
+                            grid: { display: false }
+                        }
+                    },
+                    interaction: { intersect: false, mode: 'index' }
+                }
+            });
+        }
+
+        // ===== UI HELPERS =====
+        function showAdminPanel() {
+            document.getElementById('admin-modal').classList.add('show');
+        }
+
+        function closeModal(id) {
+            document.getElementById(id).classList.remove('show');
+        }
+
+        function showToast(msg, type = 'info') {
+            const toast = document.getElementById('toast');
+            toast.textContent = msg;
+            toast.className = 'toast show ' + type;
+            clearTimeout(toast._timeout);
+            toast._timeout = setTimeout(() => {
+                toast.classList.remove('show');
+            }, 4000);
+        }
+
+        function setupTabs() {
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const tab = this.dataset.tab;
+                    switchTab(tab);
+                });
+            });
+        }
+
+        function switchTab(tab) {
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+
+            document.querySelector(`.tab-btn[data-tab="${tab}"]`)?.classList.add('active');
+            document.getElementById(`tab-${tab}`)?.classList.add('active');
+
+            if (tab === 'ranking') {
+                const activeSub = document.querySelector('.sub-tab-btn.active');
+                const sortBy = activeSub ? activeSub.dataset.sub : 'elo';
+                renderRanking(sortBy);
+            }
+            if (tab === 'profile' && currentProfileId) {
+                showProfile(currentProfileId);
+            }
+        }
+
+        function setupSubTabs() {
+            document.querySelectorAll('.sub-tab-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    document.querySelectorAll('.sub-tab-btn').forEach(b => b.classList.remove('active'));
+                    this.classList.add('active');
+                    renderRanking(this.dataset.sub);
+                });
+            });
+        }
+
+        function renderAll() {
+            const activeSub = document.querySelector('.sub-tab-btn.active');
+            const sortBy = activeSub ? activeSub.dataset.sub : 'elo';
+            renderRanking(sortBy);
+            if (currentProfileId) {
+                const p = players.find(pl => pl.id === currentProfileId);
+                if (p) showProfile(currentProfileId);
+            }
+        }
+
+        // ===== CLOSE MODAL ON OVERLAY CLICK =====
+        document.addEventListener('DOMContentLoaded', function() {
+            document.querySelectorAll('.modal-overlay').forEach(overlay => {
+                overlay.addEventListener('click', function(e) {
+                    if (e.target === this) {
+                        this.classList.remove('show');
+                    }
+                });
+            });
+
+            // Khởi tạo
+            init();
+
+            // Hiển thị version
+            document.getElementById('version-info').textContent = `📁 ${GITHUB_CONFIG.username}/${GITHUB_CONFIG.repo}`;
+        });
+    </script>
+</body>
+</html>
